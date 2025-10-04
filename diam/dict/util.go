@@ -18,6 +18,7 @@ import (
 // dictionary and only then in base diameter dictionary
 // Note: care must be taken to avoid creating parent-child loops
 var parentAppIds map[uint32]uint32 = map[uint32]uint32{
+	16777250: 4,
 	16777251: 4,
 	16777238: 4,
 	4:        1,
