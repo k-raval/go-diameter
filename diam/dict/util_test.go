@@ -101,6 +101,30 @@ func TestFindAVPWithVendor(t *testing.T) {
 	findAVPCodeTest(t, 16777251, "User-Password", UndefinedVendorID, 2)
 }
 
+// An AVP code found under another vendor is found by retrying without the vendor; an unknown one is
+// returned as unknown AVP with an error, with or without vendor, and does not recurse forever
+func TestFindAVPWithVendorUnknownCode(t *testing.T) {
+	var nokiaXML = `<?xml version="1.0" encoding="UTF-8"?>
+<diameter>
+  <application id="43">
+    <vendor id="94" name="Nokia" />
+    <avp name="Session-Start-Indicator" code="5105" must="V" may="P,M" must-not="-" may-encrypt="N" vendor-id="94">
+      <data type="UTF8String" />
+    </avp>
+  </application>
+</diameter>`
+	Default.Load(bytes.NewReader([]byte(nokiaXML)))
+	if avp, err := Default.FindAVPWithVendor(43, uint32(5105), 10415); err != nil || avp.Name != "Session-Start-Indicator" {
+		t.Errorf("AVP 5105 under vendor 10415: %v %v, want Session-Start-Indicator by the retry without vendor", avp, err)
+	}
+	for _, vendorID := range []uint32{10415, UndefinedVendorID} {
+		avp, err := Default.FindAVPWithVendor(16777238, uint32(99999), vendorID)
+		if err == nil || avp == nil || avp.Code != 99999 {
+			t.Errorf("unknown AVP 99999, vendor %d: %v %v, want an unknown AVP and an error", vendorID, avp, err)
+		}
+	}
+}
+
 func TestFindAVP(t *testing.T) {
 	if _, err := Default.FindAVP(999, 263); err != nil {
 		t.Fatal(err)
